@@ -1,43 +1,46 @@
 <template>
-  <q-page class="row items-center justify-evenly">
-    <example-component
-      title="Example component"
-      active
-      :todos="todos"
-      :meta="meta"
-    ></example-component>
+  <q-page class="column items-center q-pa-xl">
+    <div class="target-number text-center">
+      <div class="text-h5 text-weight-bold">Target Number</div>
+      <div class="text-h2 text-primary">{{ target }}</div>
+    </div>
+    <Calculator :target="target" @evaluate="onEvaluate" :reset="resetKey" @hits="onHits" />
+    <q-dialog v-model="showWinner" persistent>
+      <q-card class="flex flex-center q-pa-xl" style="min-width: 300px; min-height: 200px">
+        <q-spinner color="primary" size="80px" class="q-mb-md" />
+        <div class="text-h4 text-center">Winner!</div>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { Todo, Meta } from 'components/models';
-import ExampleComponent from 'components/ExampleComponent.vue';
+import Calculator from 'components/Calculator.vue';
 
-const todos = ref<Todo[]>([
-  {
-    id: 1,
-    content: 'ct1',
-  },
-  {
-    id: 2,
-    content: 'ct2',
-  },
-  {
-    id: 3,
-    content: 'ct3',
-  },
-  {
-    id: 4,
-    content: 'ct4',
-  },
-  {
-    id: 5,
-    content: 'ct5',
-  },
-]);
+// Generate a random target number between 10 and 100
+function getRandomTarget() {
+  // Target between 10 and 16 inclusive
+  return Math.floor(Math.random() * 7) + 10;
+}
+const target = ref(getRandomTarget());
+const showSuccess = ref(false);
+const resetKey = ref(0);
+const showWinner = ref(false);
 
-const meta = ref<Meta>({
-  totalCount: 1200,
-});
+function onEvaluate(result: number) {
+  showSuccess.value = result === target.value;
+  target.value = getRandomTarget();
+  resetKey.value++;
+}
+
+function onHits(val: number) {
+  if (val >= 3) {
+    showWinner.value = true;
+    setTimeout(() => {
+      showWinner.value = false;
+      resetKey.value++;
+    }, 2000);
+  }
+}
 </script>
