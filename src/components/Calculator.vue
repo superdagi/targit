@@ -1,5 +1,5 @@
 <template>
-  <div class="row no-wrap items-start">
+  <div class="row no-wrap items-start" data-component="CalculatorGame">
     <div
       class="calculator q-pa-md q-mt-xl column items-center bg-grey-2 shadow-2"
       style="max-width: 340px; border-radius: 14px; min-width: 260px"
@@ -74,6 +74,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'CalculatorGame' });
 import { ref, watch } from 'vue';
 
 const props = defineProps<{ target?: number; reset?: number }>();
@@ -104,7 +105,7 @@ function calculate() {
     calcInput.value = result.toString();
     emit('evaluate', Number(result));
     // Require at least one operator for a valid hit
-    const hasOperator = /[\+\-\*\/]/.test(input);
+    const hasOperator = /[+\-*/]/.test(input);
     if (props.target !== undefined && Number(result) === props.target && hasOperator) {
       if (hits.value < 3) hits.value++;
     }
