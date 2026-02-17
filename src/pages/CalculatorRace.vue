@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 // Responsive: flip Player 1 on narrow screens
 const isNarrowScreen = ref(false);
 function handleResize() {
@@ -38,12 +38,6 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 import CalculatorGame2 from 'components/CalculatorGame2.vue';
-
-const getRandomEquation = () => {
-  const a = Math.floor(Math.random() * 11) + 1;
-  const b = Math.floor(Math.random() * (20 - a + 1)) + 1;
-  return `${a} + ${b}`;
-};
 
 const resetKey1 = ref(0);
 const resetKey2 = ref(0);
