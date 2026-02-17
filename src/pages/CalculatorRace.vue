@@ -45,30 +45,12 @@ const getRandomEquation = () => {
   return `${a} + ${b}`;
 };
 
-const target1 = ref(getRandomEquation());
-const target2 = ref(getRandomEquation());
-
 const resetKey1 = ref(0);
 const resetKey2 = ref(0);
 const showWinner = ref(false);
 const winnerText = ref('');
 const player1Hits = ref(0);
 const player2Hits = ref(0);
-
-const targetValue1 = computed(() => {
-  const match = /^\s*(\d+)\s*\+\s*(\d+)\s*$/.exec(target1.value);
-  if (match) {
-    return parseInt(match[1] ?? '0', 10) + parseInt(match[2] ?? '0', 10);
-  }
-  return 0;
-});
-const targetValue2 = computed(() => {
-  const match = /^\s*(\d+)\s*\+\s*(\d+)\s*$/.exec(target2.value);
-  if (match) {
-    return parseInt(match[1] ?? '0', 10) + parseInt(match[2] ?? '0', 10);
-  }
-  return 0;
-});
 
 const evaluate1 = (value: number) => {
   player1Hits.value = value;
@@ -80,7 +62,6 @@ const evaluate1 = (value: number) => {
       resetGame();
     }, 2000);
   } else {
-    target1.value = getRandomEquation();
     resetKey1.value++;
   }
 };
@@ -94,7 +75,6 @@ const evaluate2 = (value: number) => {
       resetGame();
     }, 2000);
   } else {
-    target2.value = getRandomEquation();
     resetKey2.value++;
   }
 };
@@ -102,8 +82,6 @@ const evaluate2 = (value: number) => {
 function resetGame() {
   player1Hits.value = 0;
   player2Hits.value = 0;
-  target1.value = getRandomEquation();
-  target2.value = getRandomEquation();
   resetKey1.value++;
   resetKey2.value++;
 }
