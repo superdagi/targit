@@ -1,10 +1,10 @@
 <template>
   <div class="row no-wrap items-start" data-component="CalculatorGame">
     <div
-      class="calculator q-pa-md q-mt-xl column items-center bg-grey-2 shadow-2"
+      class="calculator q-pa-md q-mt-sm column items-center bg-grey-2 shadow-2"
       style="max-width: 340px; border-radius: 14px; min-width: 260px"
     >
-      <div class="q-mb-md full-width">
+      <div class="full-width">
         <q-input
           v-model="calcInput"
           label="Calculator"
@@ -56,20 +56,13 @@
         </div>
         <div class="row q-gutter-sm q-mb-xs">
           <q-btn label="0" @click="append(0)" color="primary" flat class="col" size="lg" />
-          <q-btn label="." @click="append('.')" color="primary" flat class="col" size="lg" />
+          <q-btn label="=" @click="calculate" color="primary" flat class="col" size="lg" />
           <q-btn label="C" @click="clearCalc" color="negative" flat class="col" size="lg" />
           <q-btn label="+" @click="append('+')" color="secondary" flat class="col" size="lg" />
         </div>
-        <div class="row q-gutter-sm q-mt-sm">
-          <q-btn label="=" @click="calculate" color="accent" class="full-width text-h6" size="lg" />
-        </div>
       </div>
     </div>
-    <div class="column items-center q-ml-xl q-mt-xl">
-      <div v-for="i in 3" :key="i" class="q-mb-md">
-        <q-icon :name="'circle'" size="36px" :color="i <= hits ? 'yellow-7' : 'grey-4'" />
-      </div>
-    </div>
+    <!-- Light bulbs UI removed; now handled in CalculatorGame.vue -->
   </div>
 </template>
 
@@ -77,7 +70,7 @@
 defineOptions({ name: 'CalculatorGame' });
 import { ref, watch } from 'vue';
 
-const props = defineProps<{ target?: number; reset?: number }>();
+const props = defineProps<{ reset?: number }>();
 // Watch for reset prop changes to clear calculator
 watch(
   () => props.reset,
@@ -86,8 +79,7 @@ watch(
   },
 );
 const emit = defineEmits<{
-  (e: 'evaluate', result: number): void;
-  (e: 'hits', hits: number): void;
+  (e: 'result', result: number): void;
 }>();
 
 const calcInput = ref('');
@@ -106,17 +98,11 @@ const calculate = () => {
     const input = calcInput.value;
     const result = eval(input);
     calcInput.value = result.toString();
-    emit('evaluate', Number(result));
-
-    if (props.target !== undefined && Number(result) === props.target) {
-      if (hits.value < 3) hits.value++;
-    }
-
-    emit('hits', hits.value);
+    emit('result', Number(result));
     calcInput.value = '';
   } catch {
     calcInput.value = 'Error';
-    emit('evaluate', NaN);
+    emit('result', NaN);
   }
 };
 </script>

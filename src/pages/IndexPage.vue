@@ -4,12 +4,8 @@
       <div
         class="text-h5 text-weight-bold rounded"
         :class="showSuccess ? 'bg-green' : showMiss ? 'bg-red' : ''"
-      >
-        Target Number
-      </div>
-      <div class="text-h2 text-primary">
-        {{ target }}
-      </div>
+      ></div>
+      <div class="text-h2 text-primary">{{ target }}ff</div>
     </div>
     <Calculator
       :target="targetValue ?? -7"
