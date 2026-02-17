@@ -82,37 +82,41 @@ const props = defineProps<{ target?: number; reset?: number }>();
 watch(
   () => props.reset,
   () => {
-    calcInput.value = '';
+    hits.value = 0;
   },
 );
 const emit = defineEmits<{
   (e: 'evaluate', result: number): void;
   (e: 'hits', hits: number): void;
 }>();
+
 const calcInput = ref('');
 const hits = ref(0);
 
-function append(val: string | number) {
+const append = (val: string | number) => {
   calcInput.value += val;
-}
-function clearCalc() {
+};
+
+const clearCalc = () => {
   calcInput.value = '';
-}
-function calculate() {
+};
+
+const calculate = () => {
   try {
     const input = calcInput.value;
     const result = eval(input);
     calcInput.value = result.toString();
     emit('evaluate', Number(result));
-    // Require at least one operator for a valid hit
-    const hasOperator = /[+\-*/]/.test(input);
-    if (props.target !== undefined && Number(result) === props.target && hasOperator) {
+
+    if (props.target !== undefined && Number(result) === props.target) {
       if (hits.value < 3) hits.value++;
     }
+
     emit('hits', hits.value);
+    calcInput.value = '';
   } catch {
     calcInput.value = 'Error';
     emit('evaluate', NaN);
   }
-}
+};
 </script>
