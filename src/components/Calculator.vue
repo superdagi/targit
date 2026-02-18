@@ -7,7 +7,6 @@
       <div class="full-width">
         <q-input
           v-model="calcInput"
-          label="Calculator"
           filled
           readonly
           class="full-width text-right text-h6"
@@ -15,7 +14,7 @@
         />
       </div>
       <div class="column full-width">
-        <div class="row q-gutter-sm q-mb-xs">
+        <div class="row q-gutter-sm">
           <q-btn
             v-for="n in [7, 8, 9]"
             :key="n"
@@ -26,9 +25,17 @@
             class="col"
             size="lg"
           />
-          <q-btn label="/" @click="append('/')" color="secondary" flat class="col" size="lg" />
+          <q-btn
+            v-if="!props.hideOperators"
+            label="/"
+            @click="append('/')"
+            color="secondary"
+            flat
+            class="col"
+            size="lg"
+          />
         </div>
-        <div class="row q-gutter-sm q-mb-xs">
+        <div class="row q-gutter-sm">
           <q-btn
             v-for="n in [4, 5, 6]"
             :key="n"
@@ -39,9 +46,17 @@
             class="col"
             size="lg"
           />
-          <q-btn label="*" @click="append('*')" color="secondary" flat class="col" size="lg" />
+          <q-btn
+            v-if="!props.hideOperators"
+            label="*"
+            @click="append('*')"
+            color="secondary"
+            flat
+            class="col"
+            size="lg"
+          />
         </div>
-        <div class="row q-gutter-sm q-mb-xs">
+        <div class="row q-gutter-sm">
           <q-btn
             v-for="n in [1, 2, 3]"
             :key="n"
@@ -52,13 +67,29 @@
             class="col"
             size="lg"
           />
-          <q-btn label="-" @click="append('-')" color="secondary" flat class="col" size="lg" />
+          <q-btn
+            v-if="!props.hideOperators"
+            label="-"
+            @click="append('-')"
+            color="secondary"
+            flat
+            class="col"
+            size="lg"
+          />
         </div>
-        <div class="row q-gutter-sm q-mb-xs">
-          <q-btn label="0" @click="append(0)" color="primary" flat class="col" size="lg" />
-          <q-btn label="=" @click="calculate" color="primary" flat class="col" size="lg" />
+        <div class="row q-gutter-xs">
           <q-btn label="C" @click="clearCalc" color="negative" flat class="col" size="lg" />
-          <q-btn label="+" @click="append('+')" color="secondary" flat class="col" size="lg" />
+          <q-btn label="0" @click="append(0)" color="primary" flat class="col" size="lg" />
+          <q-btn label="=" @click="calculate" color="white" flat class="col bg-green" size="lg" />
+          <q-btn
+            v-if="!props.hideOperators"
+            label="+"
+            @click="append('+')"
+            color="secondary"
+            flat
+            class="col"
+            size="lg"
+          />
         </div>
       </div>
     </div>
@@ -70,7 +101,7 @@
 defineOptions({ name: 'CalculatorGame' });
 import { ref, watch } from 'vue';
 
-const props = defineProps<{ reset?: number }>();
+const props = defineProps<{ reset?: number; hideOperators?: boolean }>();
 // Watch for reset prop changes to clear calculator
 watch(
   () => props.reset,

@@ -1,15 +1,17 @@
 <template>
   <div>
-    <div class="target-number text-right">
-      <div class="text-h4 text-primary">{{ target }}</div>
-    </div>
-    <div class="row items-center">
-      <div class="items-center">
+    <div class="row justify-around q-gutter-x">
+      <div class="row items-center justify-center">
         <div v-for="i in 5" :key="i">
-          <q-icon :name="'circle'" size="36px" :color="i <= hits ? 'yellow-7' : 'grey-4'" />
+          <q-icon :name="'circle'" size="21px" :color="i <= hits ? 'yellow-7' : 'grey-4'" />
         </div>
+        <div class="text-h4 text-primary q-pl-xl">{{ target }}</div>
       </div>
-      <Calculator :reset="resetKey" @result="evaluate($event)" />
+      <Calculator
+        :reset="resetKey"
+        :hide-operators="props.hideOperators"
+        @result="evaluate($event)"
+      />
     </div>
     <q-dialog v-model="showWinner" persistent>
       <q-card class="flex flex-center q-pa-xl" style="min-width: 300px; min-height: 200px">
@@ -23,6 +25,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import Calculator from 'components/Calculator.vue';
+
+const props = defineProps<{ hideOperators?: boolean }>();
 
 const getRandomEquation = () => {
   const a = Math.floor(Math.random() * 11) + 1;

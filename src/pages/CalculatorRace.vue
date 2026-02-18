@@ -6,12 +6,12 @@
       :class="{ 'rotate-180': isNarrowScreen }"
       style="border-radius: 12px; min-width: 320px"
     >
-      <CalculatorGame2 :reset="resetKey1" @hits="evaluate1($event)" />
+      <CalculatorGame2 :reset="resetKey1" :hide-operators="true" @hits="evaluate1($event)" />
     </div>
 
     <!-- Player 2 -->
     <div class="col column items-center" style="border-radius: 12px; min-width: 320px">
-      <CalculatorGame2 :reset="resetKey2" @hits="evaluate2($event)" />
+      <CalculatorGame2 :reset="resetKey2" :hide-operators="true" @hits="evaluate2($event)" />
     </div>
 
     <q-dialog v-model="showWinner" persistent>
@@ -28,7 +28,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 // Responsive: flip Player 1 on narrow screens
 const isNarrowScreen = ref(false);
 function handleResize() {
-  isNarrowScreen.value = window.innerWidth <= 700;
+  isNarrowScreen.value = window.innerWidth <= 1200;
 }
 onMounted(() => {
   handleResize();
