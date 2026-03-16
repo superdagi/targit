@@ -6,25 +6,41 @@
       :class="{ 'rotate-180': isNarrowScreen }"
       style="border-radius: 12px; min-width: 320px"
     >
-      <CalculatorGame2 :reset="resetKey1" :hide-operators="true" @hits="evaluate1($event)" />
+      <CalculatorGame2
+        ref="player1Ref"
+        :hide-operators="true"
+        :roundLength="props.roundLength"
+        :bestOf="props.bestOf"
+        @wins="evaluate1($event)"
+      />
     </div>
 
     <!-- Player 2 -->
     <div class="col column items-center" style="border-radius: 12px; min-width: 320px">
-      <CalculatorGame2 :reset="resetKey2" :hide-operators="true" @hits="evaluate2($event)" />
+      <CalculatorGame2
+        ref="player2Ref"
+        :hide-operators="true"
+        :roundLength="props.roundLength"
+        :bestOf="props.bestOf"
+        @wins="evaluate2($event)"
+      />
     </div>
-
-    <q-dialog v-model="showWinner" persistent>
-      <q-card class="flex flex-center q-pa-xl" style="min-width: 300px; min-height: 200px">
-        <q-spinner color="primary" size="80px" class="q-mb-md" />
-        <div class="text-h4 text-center">{{ winnerText }}</div>
-      </q-card>
-    </q-dialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+
+// Props
+interface Props {
+  roundLength?: number;
+  bestOf?: number;
+}
+const props = withDefaults(defineProps<Props>(), {
+  roundLength: 5,
+  bestOf: 5,
+});
+
 // Responsive: flip Player 1 on narrow screens
 const isNarrowScreen = ref(false);
 function handleResize() {
@@ -39,44 +55,42 @@ onUnmounted(() => {
 });
 import CalculatorGame2 from 'components/CalculatorGame2.vue';
 
-const resetKey1 = ref(0);
-const resetKey2 = ref(0);
-const showWinner = ref(false);
-const winnerText = ref('');
-const player1Hits = ref(0);
-const player2Hits = ref(0);
+const player1Ref = ref();
+const player2Ref = ref();
 
-const evaluate1 = (value: number) => {
-  player1Hits.value = value;
-  if (player1Hits.value >= 5) {
-    winnerText.value = 'Player 1 Wins!';
-    showWinner.value = true;
-    setTimeout(() => {
-      showWinner.value = false;
-      resetGame();
-    }, 2000);
+const evaluate1 = async (wins: number) => {
+  const winsNeeded = Math.ceil(props.bestOf / 2);
+  if (wins >= winsNeeded) {
+    player1Ref.value?.displayMessage('Winner!');
+    player2Ref.value?.displayMessage('Loser!');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    resetGame(); // Reset both players immediately
   } else {
-    resetKey1.value++;
+    // display round messages
+    if (wins > 0) {
+      player1Ref.value?.displayMessage(`Round ${wins} won!`);
+      player2Ref.value?.displayMessage(`Round ${wins} lost!`);
+    }
   }
 };
-const evaluate2 = (value: number) => {
-  player2Hits.value = value;
-  if (player2Hits.value >= 5) {
-    winnerText.value = 'Player 2 Wins!';
-    showWinner.value = true;
-    setTimeout(() => {
-      showWinner.value = false;
-      resetGame();
-    }, 2000);
+const evaluate2 = async (wins: number) => {
+  const winsNeeded = Math.ceil(props.bestOf / 2);
+  if (wins >= winsNeeded) {
+    player2Ref.value?.displayMessage('Winner!');
+    player1Ref.value?.displayMessage('Loser!');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    resetGame(); // Reset both players immediately
   } else {
-    resetKey2.value++;
+    // display round messages
+    if (wins > 0) {
+      player2Ref.value?.displayMessage(`Round ${wins} won!`);
+      player1Ref.value?.displayMessage(`Round ${wins} lost!`);
+    }
   }
 };
 
 function resetGame() {
-  player1Hits.value = 0;
-  player2Hits.value = 0;
-  resetKey1.value++;
-  resetKey2.value++;
+  player1Ref.value?.resetHits();
+  player2Ref.value?.resetHits();
 }
 </script>
