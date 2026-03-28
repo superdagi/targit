@@ -6,22 +6,24 @@
       :class="{ 'rotate-180': isNarrowScreen }"
       style="border-radius: 12px; min-width: 320px"
     >
-      <CalculatorGame2
+      <CalculatorGame
         ref="player1Ref"
         :hide-operators="true"
         :roundLength="props.roundLength"
         :bestOf="props.bestOf"
+        :difficultyLevel="currentDifficulty"
         @wins="evaluate1($event)"
       />
     </div>
 
     <!-- Player 2 -->
     <div class="col column items-center" style="border-radius: 12px; min-width: 320px">
-      <CalculatorGame2
+      <CalculatorGame
         ref="player2Ref"
         :hide-operators="true"
         :roundLength="props.roundLength"
         :bestOf="props.bestOf"
+        :difficultyLevel="currentDifficulty"
         @wins="evaluate2($event)"
       />
     </div>
@@ -30,6 +32,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import CalculatorGame from '../components/CalculatorGame.vue';
+import { useDuel, type DuelConfig, type GameComponent } from '../composables/useDuel';
 
 // Props
 interface Props {
@@ -38,7 +42,7 @@ interface Props {
 }
 const props = withDefaults(defineProps<Props>(), {
   roundLength: 5,
-  bestOf: 5,
+  bestOf: 3,
 });
 
 // Responsive: flip Player 1 on narrow screens
@@ -53,44 +57,29 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
-import CalculatorGame2 from 'components/CalculatorGame2.vue';
 
-const player1Ref = ref();
-const player2Ref = ref();
+// Create refs for component instances
+const player1Ref = ref<GameComponent | null>(null);
+const player2Ref = ref<GameComponent | null>(null);
 
-const evaluate1 = async (wins: number) => {
-  const winsNeeded = Math.ceil(props.bestOf / 2);
-  if (wins >= winsNeeded) {
-    player1Ref.value?.displayMessage('Winner!');
-    player2Ref.value?.displayMessage('Loser!');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    resetGame(); // Reset both players immediately
-  } else {
-    // display round messages
-    if (wins > 0) {
-      player1Ref.value?.displayMessage(`Round ${wins} won!`);
-      player2Ref.value?.displayMessage(`Round ${wins} lost!`);
-    }
-  }
-};
-const evaluate2 = async (wins: number) => {
-  const winsNeeded = Math.ceil(props.bestOf / 2);
-  if (wins >= winsNeeded) {
-    player2Ref.value?.displayMessage('Winner!');
-    player1Ref.value?.displayMessage('Loser!');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    resetGame(); // Reset both players immediately
-  } else {
-    // display round messages
-    if (wins > 0) {
-      player2Ref.value?.displayMessage(`Round ${wins} won!`);
-      player1Ref.value?.displayMessage(`Round ${wins} lost!`);
-    }
-  }
+// Duel configuration with Norwegian messages
+const duelConfig: DuelConfig = {
+  bestOf: props.bestOf,
+  winnerMessage: '🏆 SPILLVINNER! 🏆\nSluttresultat: {wins}-{opponentWins}',
+  loserMessage: 'Spill over\nSluttresultat: {wins}-{opponentWins}',
+  roundWinMessage: (round: number) => `Runde ${round} vunnet!`,
+  roundLoseMessage: (round: number) => `Runde ${round} tapt!`,
+  winnerTimeout: 5000,
 };
 
-function resetGame() {
-  player1Ref.value?.resetHits();
-  player2Ref.value?.resetHits();
-}
+// Use the duel composable
+const { handlePlayer1Win, handlePlayer2Win, currentDifficulty } = useDuel(
+  player1Ref,
+  player2Ref,
+  duelConfig,
+);
+
+// Connect to CalculatorGame events
+const evaluate1 = (wins: number) => handlePlayer1Win(wins);
+const evaluate2 = (wins: number) => handlePlayer2Win(wins);
 </script>
