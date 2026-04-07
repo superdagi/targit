@@ -41,6 +41,12 @@ const linksList: EssentialLinkProps[] = [
     icon: 'calculate',
     link: '/calculator-game',
   },
+  {
+    title: 'Klasserom',
+    caption: 'Multiplayer for hele klassen',
+    icon: 'groups',
+    link: '/classroom',
+  },
 ];
 
 const leftDrawerOpen = ref(false);

@@ -8,6 +8,7 @@ const routes: RouteRecordRaw[] = [
       { path: '', component: () => import('pages/CalculatorGamePage.vue') },
       { path: 'calculator-game', component: () => import('pages/CalculatorGamePage.vue') },
       { path: 'calculator-race', component: () => import('pages/CalculatorRace.vue') },
+      { path: 'classroom', component: () => import('pages/ClassroomGame.vue') },
     ],
   },
 

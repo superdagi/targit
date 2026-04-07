@@ -1,0 +1,307 @@
+<template>
+  <q-page class="column items-center q-pa-md" style="max-width: 700px; margin: 0 auto">
+    <!-- ─── Not connected ─── -->
+    <template v-if="!connected">
+      <q-card class="full-width q-pa-lg text-center">
+        <q-icon name="sports_esports" size="64px" color="primary" class="q-mb-md" />
+        <div class="text-h5 q-mb-sm">Klasserom-spill</div>
+        <div class="text-grey-6 q-mb-lg">Koble til server og oprett eller bli med i et rom</div>
+        <q-btn color="primary" label="Koble til" icon="wifi" unelevated @click="connect" />
+      </q-card>
+    </template>
+
+    <!-- ─── Lobby: pick role ─── -->
+    <template v-else-if="!roomState">
+      <q-card class="full-width q-pa-lg">
+        <div class="text-h6 q-mb-md">Hei! Hvem er du?</div>
+
+        <q-input v-model="playerName" label="Navn" outlined class="q-mb-md" @keyup.enter="onNameConfirm" />
+
+        <div class="row q-gutter-md">
+          <q-btn
+            color="primary"
+            label="Opprett rom (Lærer)"
+            icon="school"
+            unelevated
+            class="col"
+            :disable="!playerName.trim()"
+            @click="onCreateRoom"
+          />
+          <q-btn
+            color="secondary"
+            label="Bli med (Elev)"
+            icon="group"
+            unelevated
+            class="col"
+            :disable="!playerName.trim()"
+            @click="showJoin = true"
+          />
+        </div>
+
+        <!-- Join dialog -->
+        <q-dialog v-model="showJoin">
+          <q-card style="min-width: 300px" class="q-pa-md">
+            <div class="text-h6 q-mb-md">Skriv inn romkode</div>
+            <q-input
+              v-model="joinCode"
+              label="Romkode (4 bokstaver)"
+              outlined
+              maxlength="4"
+              class="q-mb-md"
+              @keyup.enter="onJoinRoom"
+            />
+            <div v-if="joinError" class="text-negative q-mb-sm">{{ joinError }}</div>
+            <div class="row justify-end q-gutter-sm">
+              <q-btn flat label="Avbryt" v-close-popup />
+              <q-btn color="primary" label="Bli med" :disable="joinCode.length < 4" @click="onJoinRoom" />
+            </div>
+          </q-card>
+        </q-dialog>
+      </q-card>
+    </template>
+
+    <!-- ─── Lobby: waiting for players ─── -->
+    <template v-else-if="roomState.phase === 'lobby'">
+      <q-card class="full-width q-pa-lg text-center q-mb-md">
+        <div class="text-h5 q-mb-xs">Rom: <span class="text-primary text-weight-bold">{{ roomState.roomCode }}</span></div>
+        <div class="text-grey-6 q-mb-md">Del koden med elevene!</div>
+
+        <q-list bordered separator class="rounded-borders q-mb-md text-left">
+          <q-item v-for="p in roomState.players" :key="p.id">
+            <q-item-section avatar>
+              <q-icon :name="p.isHost ? 'school' : 'person'" :color="p.isHost ? 'primary' : 'grey'" />
+            </q-item-section>
+            <q-item-section>{{ p.name }}</q-item-section>
+            <q-item-section side>
+              <q-badge v-if="p.isHost" color="primary" label="Lærer" />
+            </q-item-section>
+          </q-item>
+        </q-list>
+
+        <div v-if="isHost">
+          <q-input
+            v-model.number="totalRoundsInput"
+            type="number"
+            label="Antall spørsmål"
+            outlined
+            class="q-mb-md"
+            style="max-width: 200px; margin: 0 auto"
+            :min="3"
+            :max="50"
+          />
+          <q-btn
+            color="positive"
+            label="Start spillet!"
+            icon="play_arrow"
+            unelevated
+            size="lg"
+            :disable="roomState.players.length < 1"
+            @click="startGame"
+          />
+        </div>
+        <div v-else class="text-grey-6">Venter på at læreren starter...</div>
+      </q-card>
+    </template>
+
+    <!-- ─── Playing ─── -->
+    <template v-else-if="roomState.phase === 'playing'">
+      <div class="full-width">
+        <!-- Header: round + score -->
+        <div class="row items-center justify-between q-mb-md">
+          <div class="text-body1 text-grey-7">
+            Spørsmål {{ roomState.round }} / {{ roomState.totalRounds }}
+          </div>
+          <div class="text-body1 text-grey-7">
+            Poeng: <strong>{{ myPlayer?.score ?? 0 }}</strong>
+          </div>
+        </div>
+
+        <!-- Question card -->
+        <q-card class="full-width q-pa-xl text-center q-mb-md">
+          <div class="text-h2 text-primary q-mb-xs">{{ roomState.question?.expression }}</div>
+          <div class="text-grey-5">= ?</div>
+        </q-card>
+
+        <!-- Answer result feedback -->
+        <transition name="fade">
+          <q-card
+            v-if="lastAnswerResult"
+            class="full-width q-pa-md text-center q-mb-md"
+            :class="lastAnswerResult.correct ? 'bg-positive text-white' : 'bg-negative text-white'"
+          >
+            <q-icon :name="lastAnswerResult.correct ? 'check_circle' : 'cancel'" size="32px" class="q-mr-sm" />
+            <span v-if="lastAnswerResult.correct">Riktig!</span>
+            <span v-else>Feil! Svaret var <strong>{{ lastAnswerResult.correctAnswer }}</strong></span>
+          </q-card>
+        </transition>
+
+        <!-- Calculator -->
+        <div class="row justify-center q-mb-md">
+          <div
+            class="calculator q-pa-md q-mt-sm column items-center bg-grey-2 shadow-2"
+            style="border-radius: 14px; min-width: 260px; max-width: 340px"
+          >
+            <q-input
+              v-model="calcInput"
+              filled
+              readonly
+              class="full-width text-right text-h5 q-mb-sm"
+              input-class="text-right"
+            />
+            <div class="column full-width">
+              <div class="row q-gutter-sm">
+                <q-btn v-for="n in [7, 8, 9]" :key="n" :label="n" @click="calcAppend(n)" color="primary" flat class="col" size="lg" />
+              </div>
+              <div class="row q-gutter-sm">
+                <q-btn v-for="n in [4, 5, 6]" :key="n" :label="n" @click="calcAppend(n)" color="primary" flat class="col" size="lg" />
+              </div>
+              <div class="row q-gutter-sm">
+                <q-btn v-for="n in [1, 2, 3]" :key="n" :label="n" @click="calcAppend(n)" color="primary" flat class="col" size="lg" />
+              </div>
+              <div class="row q-gutter-xs">
+                <q-btn label="C" @click="calcInput = ''" color="negative" flat class="col" size="lg" />
+                <q-btn label="0" @click="calcAppend(0)" color="primary" flat class="col" size="lg" />
+                <q-btn label="=" @click="calcSubmit" color="white" flat class="col bg-green" size="lg" :disable="alreadyAnswered" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Answered status for other players -->
+        <div class="text-caption text-grey-6 text-center q-mb-xs">Har svart:</div>
+        <div class="row justify-center q-gutter-sm q-mb-md">
+          <q-chip
+            v-for="p in roomState.players"
+            :key="p.id"
+            :color="p.answeredCurrent ? 'positive' : 'grey-4'"
+            :text-color="p.answeredCurrent ? 'white' : 'grey-8'"
+            :icon="p.answeredCurrent ? 'check' : 'hourglass_empty'"
+            size="sm"
+          >
+            {{ p.name }}
+          </q-chip>
+        </div>
+      </div>
+    </template>
+
+    <!-- ─── Finished ─── -->
+    <template v-else-if="roomState.phase === 'finished'">
+      <q-card class="full-width q-pa-lg text-center">
+        <q-icon name="emoji_events" size="72px" color="amber" class="q-mb-md" />
+        <div class="text-h4 q-mb-lg">Spillet er over!</div>
+
+        <q-list bordered separator class="rounded-borders q-mb-xl text-left">
+          <q-item v-for="(p, i) in sortedPlayers" :key="p.id">
+            <q-item-section avatar>
+              <q-avatar :color="i === 0 ? 'amber' : i === 1 ? 'grey-5' : i === 2 ? 'orange-4' : 'grey-3'" text-color="white">
+                {{ i + 1 }}
+              </q-avatar>
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ p.name }}<q-badge v-if="p.id === myId" label="deg" color="primary" class="q-ml-sm" /></q-item-label>
+            </q-item-section>
+            <q-item-section side>
+              <q-item-label>{{ p.score }} poeng</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+
+        <q-btn v-if="isHost" color="primary" label="Spill igjen" icon="replay" unelevated size="lg" @click="restartGame" />
+        <div v-else class="text-grey-6">Venter på at læreren starter ny runde...</div>
+      </q-card>
+    </template>
+  </q-page>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, computed } from 'vue';
+import { useSocketGame } from '../composables/useSocketGame';
+
+const {
+  connected,
+  roomState,
+  myId,
+  lastAnswerResult,
+  isHost,
+  myPlayer,
+  sortedPlayers,
+  connect,
+  createRoom,
+  joinRoom,
+  startGame,
+  submitAnswer,
+  restartGame,
+} = useSocketGame();
+
+const playerName = ref('');
+const showJoin = ref(false);
+const joinCode = ref('');
+const joinError = ref('');
+const totalRoundsInput = ref(10);
+
+// Calculator state
+const calcInput = ref('');
+
+const alreadyAnswered = computed(() => myPlayer.value?.answeredCurrent ?? false);
+
+// Clear calculator when question changes
+watch(
+  () => roomState.value?.round,
+  () => {
+    calcInput.value = '';
+  },
+);
+
+// Clear calculator after submitting
+watch(
+  () => lastAnswerResult.value,
+  () => {
+    calcInput.value = '';
+  },
+);
+
+function calcAppend(val: string | number) {
+  if (alreadyAnswered.value) return;
+  calcInput.value += val;
+}
+
+function calcSubmit() {
+  if (alreadyAnswered.value || !calcInput.value) return;
+  const result = Number(calcInput.value);
+  if (!isNaN(result)) {
+    submitAnswer(result);
+  }
+  calcInput.value = '';
+}
+
+function onNameConfirm() {
+  if (playerName.value.trim()) showJoin.value = true;
+}
+
+async function onCreateRoom() {
+  if (!playerName.value.trim()) return;
+  await createRoom(playerName.value.trim(), totalRoundsInput.value);
+}
+
+async function onJoinRoom() {
+  if (!joinCode.value || joinCode.value.length < 4) return;
+  joinError.value = '';
+  try {
+    await joinRoom(joinCode.value, playerName.value.trim());
+    showJoin.value = false;
+  } catch (e: unknown) {
+    joinError.value = e instanceof Error ? e.message : 'Kunne ikke bli med';
+  }
+}
+</script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
