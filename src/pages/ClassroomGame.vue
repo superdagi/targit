@@ -15,7 +15,13 @@
       <q-card class="full-width q-pa-lg">
         <div class="text-h6 q-mb-md">Hei! Hvem er du?</div>
 
-        <q-input v-model="playerName" label="Navn" outlined class="q-mb-md" @keyup.enter="onNameConfirm" />
+        <q-input
+          v-model="playerName"
+          label="Navn"
+          outlined
+          class="q-mb-md"
+          @keyup.enter="onNameConfirm"
+        />
 
         <div class="row q-gutter-md">
           <q-btn
@@ -53,7 +59,12 @@
             <div v-if="joinError" class="text-negative q-mb-sm">{{ joinError }}</div>
             <div class="row justify-end q-gutter-sm">
               <q-btn flat label="Avbryt" v-close-popup />
-              <q-btn color="primary" label="Bli med" :disable="joinCode.length < 4" @click="onJoinRoom" />
+              <q-btn
+                color="primary"
+                label="Bli med"
+                :disable="joinCode.length < 4"
+                @click="onJoinRoom"
+              />
             </div>
           </q-card>
         </q-dialog>
@@ -63,13 +74,18 @@
     <!-- ─── Lobby: waiting for players ─── -->
     <template v-else-if="roomState.phase === 'lobby'">
       <q-card class="full-width q-pa-lg text-center q-mb-md">
-        <div class="text-h5 q-mb-xs">Rom: <span class="text-primary text-weight-bold">{{ roomState.roomCode }}</span></div>
+        <div class="text-h5 q-mb-xs">
+          Rom: <span class="text-primary text-weight-bold">{{ roomState.roomCode }}</span>
+        </div>
         <div class="text-grey-6 q-mb-md">Del koden med elevene!</div>
 
         <q-list bordered separator class="rounded-borders q-mb-md text-left">
           <q-item v-for="p in roomState.players" :key="p.id">
             <q-item-section avatar>
-              <q-icon :name="p.isHost ? 'school' : 'person'" :color="p.isHost ? 'primary' : 'grey'" />
+              <q-icon
+                :name="p.isHost ? 'school' : 'person'"
+                :color="p.isHost ? 'primary' : 'grey'"
+              />
             </q-item-section>
             <q-item-section>{{ p.name }}</q-item-section>
             <q-item-section side>
@@ -129,9 +145,15 @@
             class="full-width q-pa-md text-center q-mb-md"
             :class="lastAnswerResult.correct ? 'bg-positive text-white' : 'bg-negative text-white'"
           >
-            <q-icon :name="lastAnswerResult.correct ? 'check_circle' : 'cancel'" size="32px" class="q-mr-sm" />
+            <q-icon
+              :name="lastAnswerResult.correct ? 'check_circle' : 'cancel'"
+              size="32px"
+              class="q-mr-sm"
+            />
             <span v-if="lastAnswerResult.correct">Riktig!</span>
-            <span v-else>Feil! Svaret var <strong>{{ lastAnswerResult.correctAnswer }}</strong></span>
+            <span v-else
+              >Feil! Svaret var <strong>{{ lastAnswerResult.correctAnswer }}</strong></span
+            >
           </q-card>
         </transition>
 
@@ -150,18 +172,67 @@
             />
             <div class="column full-width">
               <div class="row q-gutter-sm">
-                <q-btn v-for="n in [7, 8, 9]" :key="n" :label="n" @click="calcAppend(n)" color="primary" flat class="col" size="lg" />
+                <q-btn
+                  v-for="n in [7, 8, 9]"
+                  :key="n"
+                  :label="n"
+                  @click="calcAppend(n)"
+                  color="primary"
+                  flat
+                  class="col"
+                  size="lg"
+                />
               </div>
               <div class="row q-gutter-sm">
-                <q-btn v-for="n in [4, 5, 6]" :key="n" :label="n" @click="calcAppend(n)" color="primary" flat class="col" size="lg" />
+                <q-btn
+                  v-for="n in [4, 5, 6]"
+                  :key="n"
+                  :label="n"
+                  @click="calcAppend(n)"
+                  color="primary"
+                  flat
+                  class="col"
+                  size="lg"
+                />
               </div>
               <div class="row q-gutter-sm">
-                <q-btn v-for="n in [1, 2, 3]" :key="n" :label="n" @click="calcAppend(n)" color="primary" flat class="col" size="lg" />
+                <q-btn
+                  v-for="n in [1, 2, 3]"
+                  :key="n"
+                  :label="n"
+                  @click="calcAppend(n)"
+                  color="primary"
+                  flat
+                  class="col"
+                  size="lg"
+                />
               </div>
               <div class="row q-gutter-xs">
-                <q-btn label="C" @click="calcInput = ''" color="negative" flat class="col" size="lg" />
-                <q-btn label="0" @click="calcAppend(0)" color="primary" flat class="col" size="lg" />
-                <q-btn label="=" @click="calcSubmit" color="white" flat class="col bg-green" size="lg" :disable="alreadyAnswered" />
+                <q-btn
+                  label="C"
+                  @click="calcInput = ''"
+                  color="negative"
+                  flat
+                  class="col"
+                  size="lg"
+                />
+                <q-btn
+                  label="0"
+                  @click="calcAppend(0)"
+                  color="primary"
+                  flat
+                  class="col"
+                  size="lg"
+                />
+                <q-btn
+                  label="="
+                  @click="calcSubmit"
+                  color="white"
+                  flat
+                  class="col bg-green"
+                  size="lg"
+                  :disable="alreadyAnswered"
+                />
               </div>
             </div>
           </div>
@@ -193,12 +264,18 @@
         <q-list bordered separator class="rounded-borders q-mb-xl text-left">
           <q-item v-for="(p, i) in sortedPlayers" :key="p.id">
             <q-item-section avatar>
-              <q-avatar :color="i === 0 ? 'amber' : i === 1 ? 'grey-5' : i === 2 ? 'orange-4' : 'grey-3'" text-color="white">
+              <q-avatar
+                :color="i === 0 ? 'amber' : i === 1 ? 'grey-5' : i === 2 ? 'orange-4' : 'grey-3'"
+                text-color="white"
+              >
                 {{ i + 1 }}
               </q-avatar>
             </q-item-section>
             <q-item-section>
-              <q-item-label>{{ p.name }}<q-badge v-if="p.id === myId" label="deg" color="primary" class="q-ml-sm" /></q-item-label>
+              <q-item-label
+                >{{ p.name
+                }}<q-badge v-if="p.id === myId" label="deg" color="primary" class="q-ml-sm"
+              /></q-item-label>
             </q-item-section>
             <q-item-section side>
               <q-item-label>{{ p.score }} poeng</q-item-label>
@@ -206,7 +283,15 @@
           </q-item>
         </q-list>
 
-        <q-btn v-if="isHost" color="primary" label="Spill igjen" icon="replay" unelevated size="lg" @click="restartGame" />
+        <q-btn
+          v-if="isHost"
+          color="primary"
+          label="Spill igjen"
+          icon="replay"
+          unelevated
+          size="lg"
+          @click="restartGame"
+        />
         <div v-else class="text-grey-6">Venter på at læreren starter ny runde...</div>
       </q-card>
     </template>
@@ -244,11 +329,12 @@ const calcInput = ref('');
 
 const alreadyAnswered = computed(() => myPlayer.value?.answeredCurrent ?? false);
 
-// Clear calculator when question changes
+// Clear calculator and previous answer result when question changes
 watch(
   () => roomState.value?.round,
   () => {
     calcInput.value = '';
+    lastAnswerResult.value = null;
   },
 );
 

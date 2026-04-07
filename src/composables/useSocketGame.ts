@@ -38,9 +38,7 @@ export function useSocketGame() {
   const isHost = computed(() => roomState.value?.hostId === myId.value);
   const myPlayer = computed(() => roomState.value?.players.find((p) => p.id === myId.value));
   const sortedPlayers = computed(() =>
-    roomState.value
-      ? [...roomState.value.players].sort((a, b) => b.score - a.score)
-      : [],
+    roomState.value ? [...roomState.value.players].sort((a, b) => b.score - a.score) : [],
   );
 
   function connect() {
@@ -86,10 +84,14 @@ export function useSocketGame() {
         reject(new Error('Not connected'));
         return;
       }
-      socket.value.emit('room:create', { name, totalRounds }, (res: { roomCode?: string; error?: string }) => {
-        if (res?.error) reject(new Error(res.error));
-        else resolve(res?.roomCode ?? '');
-      });
+      socket.value.emit(
+        'room:create',
+        { name, totalRounds },
+        (res: { roomCode?: string; error?: string }) => {
+          if (res?.error) reject(new Error(res.error));
+          else resolve(res?.roomCode ?? '');
+        },
+      );
     });
   }
 
@@ -99,10 +101,14 @@ export function useSocketGame() {
         reject(new Error('Not connected'));
         return;
       }
-      socket.value.emit('room:join', { roomCode: roomCode.toUpperCase(), name }, (res: { ok?: boolean; error?: string }) => {
-        if (res?.error) reject(new Error(res.error));
-        else resolve();
-      });
+      socket.value.emit(
+        'room:join',
+        { roomCode: roomCode.toUpperCase(), name },
+        (res: { ok?: boolean; error?: string }) => {
+          if (res?.error) reject(new Error(res.error));
+          else resolve();
+        },
+      );
     });
   }
 
