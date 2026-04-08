@@ -31,7 +31,7 @@
             unelevated
             class="col"
             :disable="!playerName.trim()"
-            @click="onCreateRoom"
+            @click="showTeacherOptions = true"
           />
           <q-btn
             color="secondary"
@@ -68,6 +68,48 @@
             </div>
           </q-card>
         </q-dialog>
+
+        <!-- Teacher options dialog -->
+        <q-dialog v-model="showTeacherOptions">
+          <q-card style="min-width: 400px" class="q-pa-md">
+            <div class="text-h6 q-mb-md">Velg din rolle som lærer</div>
+            <div class="text-body2 text-grey-6 q-mb-lg">
+              Vil du delta i spillet eller bare observere elevene?
+            </div>
+
+            <div class="column q-gutter-md q-mb-lg">
+              <q-btn
+                color="primary"
+                label="Delta i spillet"
+                icon="sports_esports"
+                unelevated
+                class="full-width text-left"
+                @click="onCreateRoom(false)"
+              >
+                <q-item-section side>
+                  <div class="text-caption">Du vil kunne svare på spørsmål og få poeng</div>
+                </q-item-section>
+              </q-btn>
+
+              <q-btn
+                color="secondary"
+                label="Bare observere"
+                icon="visibility"
+                unelevated
+                class="full-width text-left"
+                @click="onCreateRoom(true)"
+              >
+                <q-item-section side>
+                  <div class="text-caption">Du kan se spillet uten å delta</div>
+                </q-item-section>
+              </q-btn>
+            </div>
+
+            <div class="row justify-end">
+              <q-btn flat label="Avbryt" v-close-popup />
+            </div>
+          </q-card>
+        </q-dialog>
       </q-card>
     </template>
 
@@ -89,7 +131,15 @@
             </q-item-section>
             <q-item-section>{{ p.name }}</q-item-section>
             <q-item-section side>
-              <q-badge v-if="p.isHost" color="primary" label="Lærer" />
+              <div class="row q-gutter-xs">
+                <q-badge
+                  v-if="p.isHost && p.isObserver"
+                  color="orange"
+                  label="Lærer (observerer)"
+                />
+                <q-badge v-else-if="p.isHost" color="primary" label="Lærer" />
+                <q-badge v-if="p.isObserver && !p.isHost" color="grey" label="Observerer" />
+              </div>
             </q-item-section>
           </q-item>
         </q-list>
@@ -127,8 +177,12 @@
           <div class="text-body1 text-grey-7">
             Spørsmål {{ roomState.round }} / {{ roomState.totalRounds }}
           </div>
-          <div class="text-body1 text-grey-7">
+          <div v-if="!isObserving" class="text-body1 text-grey-7">
             Poeng: <strong>{{ myPlayer?.score ?? 0 }}</strong>
+          </div>
+          <div v-else class="text-body1 text-orange-6">
+            <q-icon name="visibility" class="q-mr-xs" />
+            Observerer
           </div>
         </div>
 
@@ -141,7 +195,7 @@
         <!-- Answer result feedback -->
         <transition name="fade">
           <q-card
-            v-if="lastAnswerResult"
+            v-if="lastAnswerResult && !isObserving"
             class="full-width q-pa-md text-center q-mb-md"
             :class="lastAnswerResult.correct ? 'bg-positive text-white' : 'bg-negative text-white'"
           >
@@ -158,7 +212,7 @@
         </transition>
 
         <!-- Calculator -->
-        <div class="row justify-center q-mb-md">
+        <div v-if="!isObserving" class="row justify-center q-mb-md">
           <div
             class="calculator q-pa-md q-mt-sm column items-center bg-grey-2 shadow-2"
             style="border-radius: 14px; min-width: 260px; max-width: 340px"
@@ -242,15 +296,25 @@
         <div class="text-caption text-grey-6 text-center q-mb-xs">Har svart:</div>
         <div class="row justify-center q-gutter-sm q-mb-md">
           <q-chip
-            v-for="p in roomState.players"
+            v-for="p in participatingPlayers"
             :key="p.id"
             :color="p.answeredCurrent ? 'positive' : 'grey-4'"
             :text-color="p.answeredCurrent ? 'white' : 'grey-8'"
             :icon="p.answeredCurrent ? 'check' : 'hourglass_empty'"
             size="sm"
           >
-            {{ p.name }}
+            {{ p.name }}<span v-if="isObserving" class="q-ml-xs">({{ p.score }})</span>
           </q-chip>
+        </div>
+
+        <!-- Observer message -->
+        <div v-if="isObserving" class="text-center q-pa-md">
+          <q-card class="bg-orange-1 q-pa-md">
+            <q-icon name="info" color="orange" class="q-mr-sm" />
+            <span class="text-orange-8"
+              >Du observerer spillet. Elevenes svar vil oppdatere seg automatisk.</span
+            >
+          </q-card>
         </div>
       </div>
     </template>
@@ -320,6 +384,7 @@ const {
 
 const playerName = ref('');
 const showJoin = ref(false);
+const showTeacherOptions = ref(false);
 const joinCode = ref('');
 const joinError = ref('');
 const totalRoundsInput = ref(10);
@@ -328,6 +393,10 @@ const totalRoundsInput = ref(10);
 const calcInput = ref('');
 
 const alreadyAnswered = computed(() => myPlayer.value?.answeredCurrent ?? false);
+const isObserving = computed(() => myPlayer.value?.isObserver ?? false);
+const participatingPlayers = computed(
+  () => roomState.value?.players.filter((p) => !p.isObserver) ?? [],
+);
 
 // Clear calculator and previous answer result when question changes
 watch(
@@ -364,9 +433,10 @@ function onNameConfirm() {
   if (playerName.value.trim()) showJoin.value = true;
 }
 
-async function onCreateRoom() {
+async function onCreateRoom(isObserver: boolean) {
   if (!playerName.value.trim()) return;
-  await createRoom(playerName.value.trim(), totalRoundsInput.value);
+  showTeacherOptions.value = false;
+  await createRoom(playerName.value.trim(), totalRoundsInput.value, isObserver);
 }
 
 async function onJoinRoom() {

@@ -9,6 +9,7 @@ export interface RoomPlayer {
   score: number;
   answeredCurrent: boolean;
   isHost: boolean;
+  isObserver?: boolean;
 }
 
 export interface RoomState {
@@ -78,7 +79,7 @@ export function useSocketGame() {
     error.value = '';
   }
 
-  function createRoom(name: string, totalRounds = 10): Promise<string> {
+  function createRoom(name: string, totalRounds = 10, isObserver = false): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!socket.value?.connected) {
         reject(new Error('Not connected'));
@@ -86,7 +87,7 @@ export function useSocketGame() {
       }
       socket.value.emit(
         'room:create',
-        { name, totalRounds },
+        { name, totalRounds, isObserver },
         (res: { roomCode?: string; error?: string }) => {
           if (res?.error) reject(new Error(res.error));
           else resolve(res?.roomCode ?? '');
