@@ -72,28 +72,28 @@
         <!-- Teacher options dialog -->
         <q-dialog v-model="showTeacherOptions">
           <q-card style="min-width: 400px" class="q-pa-md">
-            <div class="text-h6 q-mb-md">Velg din rolle</div>
+            <div class="text-h6 q-mb-md">Velg din rolle som lærer</div>
             <div class="text-body2 text-grey-6 q-mb-lg">
-              Vil du delta i spillet eller observere?
+              Vil du delta i spillet eller bare observere elevene?
             </div>
 
-            <div class="q-mb-lg">
+            <div class="column q-gutter-md q-mb-lg">
               <q-btn
                 color="primary"
-                label="Delta"
+                label="Delta i spillet"
                 icon="sports_esports"
                 unelevated
-                class="full-width q-mb-md"
+                class="full-width text-left"
                 @click="onCreateRoom(false)"
               >
               </q-btn>
 
               <q-btn
                 color="secondary"
-                label="Observere"
+                label="Bare observere"
                 icon="visibility"
                 unelevated
-                class="full-width"
+                class="full-width text-left"
                 @click="onCreateRoom(true)"
               >
               </q-btn>
@@ -113,7 +113,7 @@
         <div class="text-h5 q-mb-xs">
           Rom: <span class="text-primary text-weight-bold">{{ roomState.roomCode }}</span>
         </div>
-        <div class="text-grey-6 q-mb-md">Del koden med deltakerne!</div>
+        <div class="text-grey-6 q-mb-md">Del koden med elevene!</div>
 
         <q-list bordered separator class="rounded-borders q-mb-md text-left">
           <q-item v-for="p in roomState.players" :key="p.id">
@@ -144,7 +144,7 @@
             type="number"
             label="Antall spørsmål"
             outlined
-            class="q-pb-md"
+            class="q-mb-md"
             style="max-width: 200px; margin: 0 auto"
             :min="3"
             :max="50"
@@ -173,8 +173,10 @@
             <q-icon name="visibility" class="q-mr-sm" />
             Lærer Dashboard
           </div>
-          <div class="text-body1 text-grey-7">
-            Spørsmål {{ roomState.round }} / {{ roomState.totalRounds }}
+          <div class="column items-end">
+            <div class="text-body1 text-grey-7">
+              Spørsmål {{ roomState.round }} / {{ roomState.totalRounds }}
+            </div>
           </div>
         </div>
 
@@ -182,7 +184,27 @@
         <q-card class="full-width q-pa-lg text-center q-mb-md">
           <div class="text-overline text-grey-6 q-mb-sm">Nåværende spørsmål</div>
           <div class="text-h3 text-primary q-mb-xs">{{ roomState.question?.expression }}</div>
-          <div class="text-h5 text-grey-5">= {{ roomState.question?.answer }}</div>
+          <div class="text-h5 text-grey-5">
+            =
+            <span v-if="waitingCount === 0 || timeLeft === 0">{{
+              roomState.question?.answer
+            }}</span>
+            <span v-else class="text-grey-4">?</span>
+          </div>
+          <!-- Timer progress bar for teacher -->
+          <div class="row items-center q-gutter-sm q-mt-md">
+            <q-linear-progress
+              :value="timeLeft / 20"
+              size="8px"
+              :color="timeLeft <= 5 ? 'negative' : 'primary'"
+              class="col"
+              :animation-speed="timeLeft == 20 ? 0 : 2100"
+            />
+            <div class="text-h6" :class="timeLeft <= 5 ? 'text-negative' : 'text-primary'">
+              <q-icon name="timer" class="q-mr-xs" />
+              {{ timeLeft }}s
+            </div>
+          </div>
         </q-card>
 
         <!-- Live Scoreboard -->
@@ -221,24 +243,10 @@
                 <div class="row items-center q-gutter-sm">
                   <div class="text-h6 text-weight-bold">{{ player.score }}</div>
                   <q-badge
-                    v-if="!player.answeredCurrent"
-                    color="orange"
-                    icon="schedule"
-                    label="Venter"
+                    :color="player.answeredCurrent ? 'positive' : 'orange'"
+                    :icon="player.answeredCurrent ? 'check_circle' : 'schedule'"
+                    :label="player.answeredCurrent ? 'Svart' : 'Venter'"
                   />
-                  <q-badge
-                    v-else-if="player.lastAnswerCorrect === true"
-                    color="positive"
-                    icon="check_circle"
-                    label="Riktig"
-                  />
-                  <q-badge
-                    v-else-if="player.lastAnswerCorrect === false"
-                    color="negative"
-                    icon="cancel"
-                    label="Feil"
-                  />
-                  <q-badge v-else color="grey" icon="help" label="Ukjent" />
                 </div>
               </q-item-section>
             </q-item>
@@ -253,12 +261,8 @@
           </div>
           <div class="row q-gutter-md text-center">
             <div class="col">
-              <div class="text-h4 text-positive">{{ correctCount }}</div>
-              <div class="text-caption text-grey-6">Riktige</div>
-            </div>
-            <div class="col">
-              <div class="text-h4 text-negative">{{ incorrectCount }}</div>
-              <div class="text-caption text-grey-6">Feil</div>
+              <div class="text-h4 text-positive">{{ answeredCount }}</div>
+              <div class="text-caption text-grey-6">Har svart</div>
             </div>
             <div class="col">
               <div class="text-h4 text-orange">{{ waitingCount }}</div>
@@ -279,12 +283,14 @@
           <div class="text-body1 text-grey-7">
             Spørsmål {{ roomState.round }} / {{ roomState.totalRounds }}
           </div>
-          <div v-if="!isObserving" class="text-body1 text-grey-7">
-            Poeng: <strong>{{ myPlayer?.score ?? 0 }}</strong>
-          </div>
-          <div v-else class="text-body1 text-orange-6">
-            <q-icon name="visibility" class="q-mr-xs" />
-            Observerer
+          <div class="column items-end">
+            <div v-if="!isObserving" class="text-body1 text-grey-7">
+              Poeng: <strong>{{ myPlayer?.score ?? 0 }}</strong>
+            </div>
+            <div v-else class="text-body1 text-orange-6">
+              <q-icon name="visibility" class="q-mr-xs" />
+              Observerer
+            </div>
           </div>
         </div>
 
@@ -292,6 +298,20 @@
         <q-card class="full-width q-pa-xl text-center q-mb-md">
           <div class="text-h2 text-primary q-mb-xs">{{ roomState.question?.expression }}</div>
           <div class="text-grey-5">= ?</div>
+          <!-- Timer progress bar for students -->
+          <div class="row items-center q-gutter-sm q-mt-md">
+            <q-linear-progress
+              :value="timeLeft / 20"
+              size="8px"
+              :color="timeLeft <= 5 ? 'negative' : 'primary'"
+              class="col"
+              :animation-speed="timeLeft == 20 ? 0 : 2100"
+            />
+            <div class="text-h6" :class="timeLeft <= 5 ? 'text-negative' : 'text-primary'">
+              <q-icon name="timer" class="q-mr-xs" />
+              {{ timeLeft }}s
+            </div>
+          </div>
         </q-card>
 
         <!-- Answer result feedback -->
@@ -307,9 +327,12 @@
               class="q-mr-sm"
             />
             <span v-if="lastAnswerResult.correct">Riktig!</span>
-            <span v-else
-              >Feil! Svaret var <strong>{{ lastAnswerResult.correctAnswer }}</strong></span
-            >
+            <span v-else-if="lastAnswerResult.timeUp">
+              Tiden er ute! Svaret var <strong>{{ lastAnswerResult.correctAnswer }}</strong>
+            </span>
+            <span v-else>
+              Feil! Svaret var <strong>{{ lastAnswerResult.correctAnswer }}</strong>
+            </span>
           </q-card>
         </transition>
 
@@ -466,6 +489,7 @@ const {
   isHost,
   myPlayer,
   sortedPlayers,
+  timeLeft,
   connect,
   createRoom,
   joinRoom,
@@ -492,22 +516,30 @@ const participatingPlayers = computed(
 const sortedParticipatingPlayers = computed(() =>
   [...participatingPlayers.value].sort((a, b) => b.score - a.score),
 );
+const answeredCount = computed(
+  () => participatingPlayers.value.filter((p) => p.answeredCurrent).length,
+);
 const waitingCount = computed(
   () => participatingPlayers.value.filter((p) => !p.answeredCurrent).length,
 );
-const correctCount = computed(
-  () => participatingPlayers.value.filter((p) => p.lastAnswerCorrect === true).length,
-);
-const incorrectCount = computed(
-  () => participatingPlayers.value.filter((p) => p.lastAnswerCorrect === false).length,
-);
 
-// Clear calculator and previous answer result when question changes
+// Clear calculator when question changes
 watch(
   () => roomState.value?.round,
   () => {
     calcInput.value = '';
     lastAnswerResult.value = null;
+  },
+);
+
+// Clear calculator when entering playing phase
+watch(
+  () => roomState.value?.phase,
+  (newPhase) => {
+    if (newPhase === 'playing') {
+      calcInput.value = '';
+      lastAnswerResult.value = null;
+    }
   },
 );
 

@@ -21,12 +21,14 @@ export interface RoomState {
   hostId: string;
   round: number;
   totalRounds: number;
+  timeLeft: number;
 }
 
 export interface AnswerResult {
   correct: boolean;
   answer: number;
   correctAnswer: number;
+  timeUp?: boolean;
 }
 
 export function useSocketGame() {
@@ -42,6 +44,9 @@ export function useSocketGame() {
   const sortedPlayers = computed(() =>
     roomState.value ? [...roomState.value.players].sort((a, b) => b.score - a.score) : [],
   );
+
+  // Get current timer value from server
+  const timeLeft = computed(() => roomState.value?.timeLeft || 0);
 
   function connect() {
     if (socket.value?.connected) return;
@@ -67,6 +72,12 @@ export function useSocketGame() {
 
     s.on('game:answer:result', (result: AnswerResult) => {
       lastAnswerResult.value = result;
+    });
+
+    s.on('timer:update', (data: { timeLeft: number }) => {
+      if (roomState.value) {
+        roomState.value.timeLeft = data.timeLeft;
+      }
     });
   }
 
@@ -136,6 +147,7 @@ export function useSocketGame() {
     isHost,
     myPlayer,
     sortedPlayers,
+    timeLeft,
     connect,
     disconnect,
     createRoom,
