@@ -72,36 +72,30 @@
         <!-- Teacher options dialog -->
         <q-dialog v-model="showTeacherOptions">
           <q-card style="min-width: 400px" class="q-pa-md">
-            <div class="text-h6 q-mb-md">Velg din rolle som lærer</div>
+            <div class="text-h6 q-mb-md">Velg din rolle</div>
             <div class="text-body2 text-grey-6 q-mb-lg">
-              Vil du delta i spillet eller bare observere elevene?
+              Vil du delta i spillet eller observere?
             </div>
 
-            <div class="column q-gutter-md q-mb-lg">
+            <div class="q-mb-lg">
               <q-btn
                 color="primary"
-                label="Delta i spillet"
+                label="Delta"
                 icon="sports_esports"
                 unelevated
-                class="full-width text-left"
+                class="full-width q-mb-md"
                 @click="onCreateRoom(false)"
               >
-                <q-item-section side>
-                  <div class="text-caption">Du vil kunne svare på spørsmål og få poeng</div>
-                </q-item-section>
               </q-btn>
 
               <q-btn
                 color="secondary"
-                label="Bare observere"
+                label="Observere"
                 icon="visibility"
                 unelevated
-                class="full-width text-left"
+                class="full-width"
                 @click="onCreateRoom(true)"
               >
-                <q-item-section side>
-                  <div class="text-caption">Du kan se spillet uten å delta</div>
-                </q-item-section>
               </q-btn>
             </div>
 
@@ -119,7 +113,7 @@
         <div class="text-h5 q-mb-xs">
           Rom: <span class="text-primary text-weight-bold">{{ roomState.roomCode }}</span>
         </div>
-        <div class="text-grey-6 q-mb-md">Del koden med elevene!</div>
+        <div class="text-grey-6 q-mb-md">Del koden med deltakerne!</div>
 
         <q-list bordered separator class="rounded-borders q-mb-md text-left">
           <q-item v-for="p in roomState.players" :key="p.id">
@@ -150,7 +144,7 @@
             type="number"
             label="Antall spørsmål"
             outlined
-            class="q-mb-md"
+            class="q-pb-md"
             style="max-width: 200px; margin: 0 auto"
             :min="3"
             :max="50"
@@ -161,7 +155,7 @@
             icon="play_arrow"
             unelevated
             size="lg"
-            :disable="roomState.players.length < 1"
+            :disable="participatingPlayers.length < 1"
             @click="startGame"
           />
         </div>
@@ -171,7 +165,115 @@
 
     <!-- ─── Playing ─── -->
     <template v-else-if="roomState.phase === 'playing'">
-      <div class="full-width">
+      <!-- Observer Dashboard -->
+      <div v-if="isObserving" class="full-width">
+        <!-- Header -->
+        <div class="row items-center justify-between q-mb-md">
+          <div class="text-h6 text-primary">
+            <q-icon name="visibility" class="q-mr-sm" />
+            Lærer Dashboard
+          </div>
+          <div class="text-body1 text-grey-7">
+            Spørsmål {{ roomState.round }} / {{ roomState.totalRounds }}
+          </div>
+        </div>
+
+        <!-- Current Question -->
+        <q-card class="full-width q-pa-lg text-center q-mb-md">
+          <div class="text-overline text-grey-6 q-mb-sm">Nåværende spørsmål</div>
+          <div class="text-h3 text-primary q-mb-xs">{{ roomState.question?.expression }}</div>
+          <div class="text-h5 text-grey-5">= {{ roomState.question?.answer }}</div>
+        </q-card>
+
+        <!-- Live Scoreboard -->
+        <q-card class="full-width q-pa-md q-mb-md">
+          <div class="text-h6 q-mb-md">
+            <q-icon name="leaderboard" class="q-mr-sm" />
+            Live poengtavle
+          </div>
+          <q-list separator>
+            <q-item
+              v-for="(player, index) in sortedParticipatingPlayers"
+              :key="player.id"
+              class="q-py-md"
+            >
+              <q-item-section avatar>
+                <q-avatar
+                  :color="
+                    index === 0
+                      ? 'amber'
+                      : index === 1
+                        ? 'grey-5'
+                        : index === 2
+                          ? 'orange-4'
+                          : 'blue'
+                  "
+                  text-color="white"
+                  size="md"
+                >
+                  {{ index + 1 }}
+                </q-avatar>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-subtitle1">{{ player.name }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <div class="row items-center q-gutter-sm">
+                  <div class="text-h6 text-weight-bold">{{ player.score }}</div>
+                  <q-badge
+                    v-if="!player.answeredCurrent"
+                    color="orange"
+                    icon="schedule"
+                    label="Venter"
+                  />
+                  <q-badge
+                    v-else-if="player.lastAnswerCorrect === true"
+                    color="positive"
+                    icon="check_circle"
+                    label="Riktig"
+                  />
+                  <q-badge
+                    v-else-if="player.lastAnswerCorrect === false"
+                    color="negative"
+                    icon="cancel"
+                    label="Feil"
+                  />
+                  <q-badge v-else color="grey" icon="help" label="Ukjent" />
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card>
+
+        <!-- Progress Overview -->
+        <q-card class="full-width q-pa-md">
+          <div class="text-h6 q-mb-md">
+            <q-icon name="analytics" class="q-mr-sm" />
+            Fremgang
+          </div>
+          <div class="row q-gutter-md text-center">
+            <div class="col">
+              <div class="text-h4 text-positive">{{ correctCount }}</div>
+              <div class="text-caption text-grey-6">Riktige</div>
+            </div>
+            <div class="col">
+              <div class="text-h4 text-negative">{{ incorrectCount }}</div>
+              <div class="text-caption text-grey-6">Feil</div>
+            </div>
+            <div class="col">
+              <div class="text-h4 text-orange">{{ waitingCount }}</div>
+              <div class="text-caption text-grey-6">Venter</div>
+            </div>
+            <div class="col">
+              <div class="text-h4 text-primary">{{ participatingPlayers.length }}</div>
+              <div class="text-caption text-grey-6">Totalt</div>
+            </div>
+          </div>
+        </q-card>
+      </div>
+
+      <!-- Regular Player View -->
+      <div v-else class="full-width">
         <!-- Header: round + score -->
         <div class="row items-center justify-between q-mb-md">
           <div class="text-body1 text-grey-7">
@@ -303,18 +405,8 @@
             :icon="p.answeredCurrent ? 'check' : 'hourglass_empty'"
             size="sm"
           >
-            {{ p.name }}<span v-if="isObserving" class="q-ml-xs">({{ p.score }})</span>
+            {{ p.name }}
           </q-chip>
-        </div>
-
-        <!-- Observer message -->
-        <div v-if="isObserving" class="text-center q-pa-md">
-          <q-card class="bg-orange-1 q-pa-md">
-            <q-icon name="info" color="orange" class="q-mr-sm" />
-            <span class="text-orange-8"
-              >Du observerer spillet. Elevenes svar vil oppdatere seg automatisk.</span
-            >
-          </q-card>
         </div>
       </div>
     </template>
@@ -396,6 +488,18 @@ const alreadyAnswered = computed(() => myPlayer.value?.answeredCurrent ?? false)
 const isObserving = computed(() => myPlayer.value?.isObserver ?? false);
 const participatingPlayers = computed(
   () => roomState.value?.players.filter((p) => !p.isObserver) ?? [],
+);
+const sortedParticipatingPlayers = computed(() =>
+  [...participatingPlayers.value].sort((a, b) => b.score - a.score),
+);
+const waitingCount = computed(
+  () => participatingPlayers.value.filter((p) => !p.answeredCurrent).length,
+);
+const correctCount = computed(
+  () => participatingPlayers.value.filter((p) => p.lastAnswerCorrect === true).length,
+);
+const incorrectCount = computed(
+  () => participatingPlayers.value.filter((p) => p.lastAnswerCorrect === false).length,
 );
 
 // Clear calculator and previous answer result when question changes

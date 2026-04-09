@@ -10,6 +10,7 @@ export interface RoomPlayer {
   answeredCurrent: boolean;
   isHost: boolean;
   isObserver?: boolean;
+  lastAnswerCorrect?: boolean | null;
 }
 
 export interface RoomState {
